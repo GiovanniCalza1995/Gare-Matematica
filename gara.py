@@ -6,12 +6,21 @@ import time
 # Configurazione Pagina
 st.set_page_config(page_title="Classifica Gara Matematica", layout="wide")
 
-# --- CSS PER CENTRARE TABELLA E TESTI ---
+# --- CSS PER CENTRARE TABELLA E NASCONDERE IL CARICAMENTO ---
 st.markdown("""
     <style>
+    /* Nasconde l'header di Streamlit (cerchietto di caricamento e menu a tendina) */
+    header {
+        visibility: hidden !important;
+    }
+    [data-testid="stStatusWidget"] {
+        visibility: hidden !important;
+    }
+    
+    /* Regola gli spazi e centra la tabella */
     .main .block-container {
         max-width: 900px;
-        padding-top: 2rem;
+        padding-top: 1rem;
     }
     div[data-testid="stTable"] table {
         margin-left: auto;
@@ -31,6 +40,7 @@ st.markdown("""
     .stTitle {
         text-align: center;
         font-size: 60px !important;
+        margin-bottom: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -113,11 +123,9 @@ else:
         st.sidebar.success("Tutti i problemi risolti!")
 
     # --- CLASSIFICA CENTRATA ---
-    # Creiamo il DataFrame e teniamo solo i Punti
     df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index')
     df = df.sort_values(by="Punti", ascending=False)
     
-    # Mostriamo la tabella (il CSS sopra si occupa di centrare tutto)
     st.table(df[['Punti']])
 
     # --- CRONOLOGIA ---
@@ -126,6 +134,6 @@ else:
     for msg in reversed(st.session_state.log[-5:]):
         st.write(f"• {msg}")
     
-    # Refresh automatico per il timer
+    # Refresh automatico per il timer (il caricamento sarà invisibile)
     time.sleep(1)
     st.rerun()
