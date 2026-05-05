@@ -9,7 +9,7 @@ st.set_page_config(page_title="Tabellone Gara Matematica", layout="wide")
 if 'log' not in st.session_state:
     st.session_state.log = []
 if 'squadre' not in st.session_state:
-    # Aggiungi qui i nomi delle tue squadre
+    # Aggiungi o modifica qui i nomi delle tue squadre
     nomi = ["Pitagora", "Euclide", "Archimede", "Gauss", "Newton"]
     st.session_state.squadre = {n: {"Punti": 200, "Errori": 0} for n in nomi}
 if 'problemi' not in st.session_state:
@@ -41,8 +41,6 @@ if st.sidebar.button("Registra Risposta"):
     
     st.sidebar.success("Registrato!")
 
----
-
 # --- CENTRALE: CLASSIFICA E LOG ---
 col1, col2 = st.columns([2, 1])
 
@@ -50,8 +48,8 @@ with col1:
     st.subheader("Classifica in Tempo Reale")
     df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index')
     df = df.sort_values(by="Punti", ascending=False)
-    # Visualizzazione con stili (colori)
-    st.table(df.style.highlight_max(axis=0, subset=["Punti"], color="#2ecc71"))
+    # Visualizzazione tabella
+    st.table(df)
 
 with col2:
     st.subheader("Ultimi Eventi")
@@ -59,7 +57,7 @@ with col2:
         st.write(msg)
 
 # Sezione Valore Problemi
-st.write("---")
+st.divider()
 st.subheader("Valore Attuale Problemi (Dinamico)")
 cols_prob = st.columns(len(st.session_state.problemi))
 for i, (p, val) in enumerate(st.session_state.problemi.items()):
