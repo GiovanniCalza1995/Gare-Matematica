@@ -18,20 +18,23 @@ st.markdown("""
     .main .block-container { max-width: 900px; padding-top: 1rem; }
     div[data-testid="stTable"] table { margin-left: auto; margin-right: auto; width: 100% !important; }
     
-    /* INTESTAZIONI COLONNE */
+    /* INTESTAZIONI COLONNE (Centrate orizzontalmente e verticalmente) */
     thead th {
         text-align: center !important;
+        vertical-align: middle !important;
         font-size: 36px !important;
         background-color: #f0f2f6 !important;
         color: #000000 !important;
+        height: 80px !important; /* Altezza fissa per vedere il centraggio */
     }
     
-    /* CELLE DATI (Testo grande e centrato) */
-    tbody td {
+    /* CELLE DATI (Testo grande e centrato in entrambe le direzioni) */
+    tbody td, tbody th {
         text-align: center !important;
+        vertical-align: middle !important;
         font-size: 32px !important;
         font-weight: bold !important;
-        vertical-align: middle !important;
+        height: 70px !important; /* Altezza fissa per uniformità */
     }
     
     .stTitle { text-align: center; font-size: 60px !important; margin-bottom: 20px; }
@@ -66,7 +69,6 @@ if not st.session_state.gara_avviata:
     col_conf1, col_conf2 = st.columns(2)
     with col_conf1:
         num_squadre = st.number_input("1) Numero squadre", min_value=2, max_value=50, value=5)
-        # Ho sistemato la stringa problematica qui:
         testo_squadre_base = "Squadra A\nSquadra B\nSquadra C\nSquadra D\nSquadra E"
         nomi_input = st.text_area("2) Nomi squadre (uno per riga)", value=testo_squadre_base)
     with col_conf2:
