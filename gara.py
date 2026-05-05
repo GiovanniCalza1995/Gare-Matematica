@@ -6,7 +6,7 @@ import time
 # Configurazione Pagina
 st.set_page_config(page_title="Classifica Gara Matematica", layout="wide")
 
-# --- CSS PER CENTRARE TABELLA E NASCONDERE IL CARICAMENTO ---
+# --- CSS PER IL DESIGN DELLA TABELLA ---
 st.markdown("""
     <style>
     /* Nasconde l'header di Streamlit (cerchietto di caricamento e menu a tendina) */
@@ -27,16 +27,30 @@ st.markdown("""
         margin-right: auto;
         width: 100% !important;
     }
-    th {
+    
+    /* INTESTAZIONE (Scritta PUNTI in maiuscolo) */
+    thead th {
         text-align: center !important;
-        font-size: 24px !important;
+        font-size: 36px !important; /* Testo ingrandito */
         background-color: #f0f2f6 !important;
     }
-    td {
+    
+    /* NOMI DELLE SQUADRE (Celle evidenziate a sinistra) */
+    tbody th {
         text-align: center !important;
         font-size: 28px !important;
+        background-color: #d1ecf1 !important; /* Colore azzurrino per evidenziarle */
+        color: #0c5460 !important; /* Testo scuro abbinato per alta leggibilità */
         font-weight: bold !important;
     }
+    
+    /* NUMERI (I punteggi effettivi) */
+    tbody td {
+        text-align: center !important;
+        font-size: 32px !important; /* Numeri belli grandi */
+        font-weight: bold !important;
+    }
+    
     .stTitle {
         text-align: center;
         font-size: 60px !important;
@@ -122,11 +136,14 @@ else:
     else:
         st.sidebar.success("Tutti i problemi risolti!")
 
-    # --- CLASSIFICA CENTRATA ---
+    # --- CLASSIFICA CENTRATA E FORMATTATA ---
     df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index')
     df = df.sort_values(by="Punti", ascending=False)
     
-    st.table(df[['Punti']])
+    # Rinominiamo la colonna in maiuscolo
+    df = df.rename(columns={"Punti": "PUNTI"})
+    
+    st.table(df[['PUNTI']])
 
     # --- CRONOLOGIA ---
     st.write("---")
@@ -134,6 +151,6 @@ else:
     for msg in reversed(st.session_state.log[-5:]):
         st.write(f"• {msg}")
     
-    # Refresh automatico per il timer (il caricamento sarà invisibile)
+    # Refresh automatico per il timer
     time.sleep(1)
     st.rerun()
