@@ -84,7 +84,6 @@ if not st.session_state.gara_avviata:
 
 # --- SCHERMATA GARA ---
 else:
-    # Sidebar sempre disponibile
     if st.sidebar.button("⚠️ Reset Totale"):
         st.session_state.gara_avviata = False
         st.rerun()
@@ -117,7 +116,6 @@ else:
         color = st.session_state.colori_squadre.get(row["SQUADRA"], "#fff")
         return [f'background-color: {color}; color: #000;', '']
 
-    # Generazione HTML della tabella senza indice
     tabella_html = (df.style
                     .apply(style_c, axis=1)
                     .set_properties(**{'text-align': 'center'})
@@ -129,29 +127,27 @@ else:
     sec = rimanente.total_seconds()
     
     if sec > 120:
-        # FASE NORMALE
+        # FASE NORMALE: Mostra Classifica
         st.title("🏆 CLASSIFICA")
         m, s = divmod(int(sec), 60)
         st.info(f"⏱️ Fine gara tra: {m:02d}:{s:02d}")
         st.write(tabella_html, unsafe_allow_html=True)
-        
         st.write("---")
         st.subheader("Ultimi aggiornamenti")
         for msg in reversed(st.session_state.log[-5:]):
             st.write(f"• {msg}")
             
     elif sec > 0:
-        # FASE BUIO (Ultimi 2 minuti)
+        # FASE BUIO: Nasconde Classifica (st.write(tabella_html) NON è qui)
         m, s = divmod(int(sec), 60)
         st.markdown("<br><br><h1 style='text-align: center; font-size: 70px; color: #ff4b4b;'>🙈 Classifica nascosta 🙈</h1>", unsafe_allow_html=True)
         st.markdown(f"<h1 style='text-align: center; font-size: 140px; font-weight: bold;'>⏱️ {m:02d}:{s:02d}</h1>", unsafe_allow_html=True)
         
     else:
-        # FINE GARA
+        # FINE GARA: Svela Classifica
         st.title("🏆 CLASSIFICA FINALE")
         st.error("⌛ GARA TERMINATA!")
         st.write(tabella_html, unsafe_allow_html=True)
 
-    # Auto-refresh
     time.sleep(1)
     st.rerun()
