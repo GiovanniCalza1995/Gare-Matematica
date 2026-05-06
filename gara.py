@@ -7,34 +7,44 @@ import itertools
 # Configurazione Pagina
 st.set_page_config(page_title="Classifica Gara Matematica", layout="wide")
 
-# --- CSS PER IL DESIGN E IL CENTRAGGIO ---
+# --- CSS AVANZATO PER IL CENTRAGGIO ASSOLUTO ---
 st.markdown("""
     <style>
     /* Nasconde l'header di Streamlit */
     header { visibility: hidden !important; }
     [data-testid="stStatusWidget"] { visibility: hidden !important; }
     
-    /* Regola gli spazi e centra la tabella */
+    /* Regola gli spazi e centra la tabella nel monitor */
     .main .block-container { max-width: 900px; padding-top: 1rem; }
     div[data-testid="stTable"] table { margin-left: auto; margin-right: auto; width: 100% !important; }
     
-    /* INTESTAZIONI COLONNE (Centrate orizzontalmente e verticalmente) */
-    thead th {
-        text-align: center !important;
+    /* REGOLE CELLE: Altezza fissa e rimozione spaziature che sbilanciano */
+    div[data-testid="stTable"] th, div[data-testid="stTable"] td {
+        height: 80px !important;
+        padding: 0 !important; 
         vertical-align: middle !important;
+    }
+    
+    /* LA MAGIA FLEXBOX: Centra orizzontalmente e verticalmente i contenitori interni di Streamlit */
+    div[data-testid="stTable"] th div, div[data-testid="stTable"] td div {
+        display: flex !important;
+        align-items: center !important; /* Centro verticale */
+        justify-content: center !important; /* Centro orizzontale */
+        height: 100% !important;
+        width: 100% !important;
+    }
+    
+    /* Stili specifici per l'INTESTAZIONE */
+    thead th {
         font-size: 36px !important;
         background-color: #f0f2f6 !important;
         color: #000000 !important;
-        height: 80px !important; /* Altezza fissa per vedere il centraggio */
     }
     
-    /* CELLE DATI (Testo grande e centrato in entrambe le direzioni) */
+    /* Stili specifici per le SQUADRE e i PUNTI */
     tbody td, tbody th {
-        text-align: center !important;
-        vertical-align: middle !important;
         font-size: 32px !important;
         font-weight: bold !important;
-        height: 70px !important; /* Altezza fissa per uniformità */
     }
     
     .stTitle { text-align: center; font-size: 60px !important; margin-bottom: 20px; }
