@@ -23,15 +23,18 @@ st.markdown("""
         height: 80px !important;
         padding: 0 !important; 
         vertical-align: middle !important;
+        text-align: center !important; /* Forza il centro orizzontale nella cella */
     }
     
-    /* LA MAGIA FLEXBOX: Centra orizzontalmente e verticalmente i contenitori interni di Streamlit */
+    /* LA MAGIA FLEXBOX CORRETTA: Centra ovunque i contenitori interni */
     div[data-testid="stTable"] th div, div[data-testid="stTable"] td div {
         display: flex !important;
         align-items: center !important; /* Centro verticale */
         justify-content: center !important; /* Centro orizzontale */
         height: 100% !important;
-        width: 100% !important;
+        width: 100% !important; /* Obbliga il div a occupare tutta la cella */
+        margin: 0 auto !important;
+        text-align: center !important;
     }
     
     /* Stili specifici per l'INTESTAZIONE */
@@ -148,7 +151,7 @@ else:
     else:
         st.sidebar.success("Tutti i problemi risolti!")
 
-    # --- CREAZIONE TABELLA CON COLORI DINAMICI ---
+    # --- CREAZIONE TABELLA CON COLORI DINAMICI E CENTRAGGIO FORZATO ---
     df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index')
     df = df.sort_values(by="PUNTI", ascending=False)
     
@@ -156,9 +159,14 @@ else:
     df.columns = ["SQUADRA", "PUNTI"]
     
     def colora_squadre(colonna):
-        return [f'background-color: {st.session_state.colori_squadre.get(nome, "#ffffff")}; color: #000000;' for nome in colonna]
+        # Aggiunto text-align: center direttamente nello stile in linea di Pandas
+        return [f'background-color: {st.session_state.colori_squadre.get(nome, "#ffffff")}; color: #000000; text-align: center;' for nome in colonna]
 
-    tabella_stilizzata = df.style.apply(colora_squadre, subset=['SQUADRA']).hide(axis="index")
+    # Applichiamo i colori, forziamo l'allineamento su tutta la tabella e nascondiamo l'indice
+    tabella_stilizzata = (df.style
+                          .apply(colora_squadre, subset=['SQUADRA'])
+                          .set_properties(**{'text-align': 'center'})
+                          .hide(axis="index"))
 
     st.table(tabella_stilizzata)
 
