@@ -1,110 +1,120 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import datetime, timedelta
 import time
-import itertools 
+import itertools
 
 # 1. Configurazione Pagina
-st.set_page_config(page_title="Classifica Gara Matematica", layout="wide")
+st.set_page_config(page_title="Gara Matematica Live", layout="wide")
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-# 2. CSS per centraggio e pulizia sidebar
+# 2. CSS per centraggio e stile
 st.markdown("""
 <style>
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; color: transparent !important; }
-    [data-testid="stHeader"] button { color: #555 !important; visibility: visible !important; }
-    .main .block-container { max-width: 900px; padding-top: 1rem; }
+    .main .block-container { max-width: 1000px; padding-top: 1rem; }
     table { margin: auto; width: 100%; border-collapse: collapse; text-align: center; }
-    th { font-size: 36px !important; background-color: #f0f2f6 !important; height: 80px; }
-    td { font-size: 32px !important; font-weight: bold !important; height: 80px; vertical-align: middle !important; }
+    th { font-size: 30px !important; background-color: #f0f2f6 !important; height: 60px; }
+    td { font-size: 35px !important; font-weight: bold !important; height: 80px; border-bottom: 1px solid #ddd; }
     .stTitle { text-align: center; font-size: 60px !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- INIZIALIZZAZIONE ---
-if 'gara_avviata' not in st.session_state: 
-    st.session_state.gara_avviata = False
+# --- FUNZIONI DI SINCRONIZZAZIONE ---
+def carica_tutto():
+    try:
+        # Carichiamo sia la classifica che lo stato dei problemi
+        df = conn.read(worksheet="Classifica", ttl=0)
+        dp = conn.read(worksheet="Problemi", ttl=0)
+        return df, dp
+    except:
+        return pd.DataFrame(), pd.DataFrame()
 
-PALETTE = ["#d4edda", "#fff3cd", "#d1ecf1", "#f8d7da", "#e2e3e5", "#cce5ff", "#e8d5cb", "#d1f2eb", "#f3d8e6", "#ffeeba"]
+def salva_tutto(df_classifica, df_problemi):
+    conn.update(worksheet="Classifica", data=df_classifica)
+    conn.update(worksheet="Problemi", data=df_problemi)
 
-# Creiamo un contenitore principale che pulirà lo schermo ogni volta
-schermata_principale = st.empty()
+# --- LOGICA DI STATO ---
+df_classifica, df_problemi = carica_tutto()
+gara_attiva = not df_classifica.empty
 
-# --- LOGICA DI NAVIGAZIONE ---
-with schermata_principale.container():
-    if not st.session_state.gara_avviata:
-        st.title("⚙️ Configurazione Gara")
-        c1, c2 = st.columns(2)
-        with c1:
-            num_s = st.number_input("1) Numero squadre", min_value=2, value=5)
-            nomi = st.text_area("2) Nomi squadre (uno per riga)", value="Squadra A\nSquadra B\nSquadra C\nSquadra D\nSquadra E")
-            num_p = st.number_input("3) Numero problemi", min_value=1, value=10)
-        with c2:
-            punti_p = st.number_input("4) Punti di partenza", value=200)
-            durata = st.number_input("5) Durata (minuti)", min_value=1, value=90)
+# --- SETUP INIZIALE ---
+if not gara_attiva:
+    st.title("⚙️ Setup Gara")
+    c1, c2 = st.columns(2)
+    with c1:
+        nomi_raw = st.text_area("Squadre", "Squadra 1\nSquadra 2")
+        num_p = st.number_input("Numero Problemi", min_value=1, value=15)
+    with c2:
+        punti_p = st.number_input("Punti iniziali", value=200)
+    
+    if st.button("🚀 AVVIA"):
+        lista = [n.strip() for n in nomi_raw.split("\n") if n.strip()]
+        ciclo = itertools.cycle(["#d4edda", "#fff3cd", "#d1ecf1", "#f8d7da", "#e2e3e5", "#cce5ff", "#e8d5cb"])
         
-        if st.button("🚀 AVVIA GARA"):
-            lista = [n.strip() for n in nomi.split("\n") if n.strip()]
-            if len(lista) == num_s:
-                st.session_state.squadre = {n: {"PUNTI": punti_p} for n in lista}
-                st.session_state.problemi = {f"Prob {i}": 20 for i in range(1, int(num_p) + 1)}
-                st.session_state.risolti = {n: [] for n in lista}
-                st.session_state.fine = datetime.now() + timedelta(minutes=durata)
-                ciclo = itertools.cycle(PALETTE)
-                st.session_state.colori = {n: next(ciclo) for n in lista}
-                st.session_state.gara_avviata = True
-                st.rerun()
-            else:
-                st.error(f"Errore nomi!")
-
-    elif st.session_state.gara_avviata and 'problemi' in st.session_state:
-        # --- CALCOLO DATI ---
-        sec_rimanenti = (st.session_state.fine - datetime.now()).total_seconds()
-        df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index').reset_index()
-        df.columns = ["SQUADRA", "PUNTI"]
-        df = df.sort_values(by="PUNTI", ascending=False)
-        html_classifica = (df.style
-                        .apply(lambda r: [f'background-color: {st.session_state.colori.get(r["SQUADRA"])};', ''], axis=1)
-                        .hide(axis="index")
-                        .to_html())
-
-        # --- VISUALIZZAZIONE GARA ---
-        if sec_rimanenti > 120:
-            st.title("🏆 CLASSIFICA LIVE")
-            m, s = divmod(int(sec_rimanenti), 60)
-            st.info(f"⏱️ Tempo rimanente: {m:02d}:{s:02d}")
-            st.write(html_classifica, unsafe_allow_html=True)
-        elif sec_rimanenti > 0:
-            m, s = divmod(int(sec_rimanenti), 60)
-            st.markdown("<br><br><h1 style='text-align: center; font-size: 70px; color: #ff4b4b;'>🙈 Classifica nascosta 🙈</h1>", unsafe_allow_html=True)
-            st.markdown(f"<h1 style='text-align: center; font-size: 160px; font-weight: bold; text-align: center;'>{m:02d}:{s:02d}</h1>", unsafe_allow_html=True)
-        else:
-            st.title("🏆 CLASSIFICA FINALE")
-            st.error("⌛ GARA TERMINATA!")
-            st.write(html_classifica, unsafe_allow_html=True)
-
-# --- SIDEBAR (Sempre fuori dal container principale) ---
-if st.session_state.gara_avviata:
-    if st.sidebar.button("⚠️ Reset Totale"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
+        df_c = pd.DataFrame({"SQUADRA": lista, "PUNTI": [punti_p]*len(lista), "COLORE": [next(ciclo) for _ in lista]})
+        df_p = pd.DataFrame({"ID": [f"P{i+1}" for i in range(num_p)], "VALORE": [20]*num_p})
+        
+        salva_tutto(df_c, df_p)
         st.rerun()
+
+# --- GARA ---
+else:
+    st.sidebar.header("🕹️ Pannello Giudice")
     
-    st.sidebar.header("Pannello Giudice")
-    sq = st.sidebar.selectbox("Squadra", list(st.session_state.squadre.keys()))
-    disp = [p for p in st.session_state.problemi.keys() if p not in st.session_state.risolti.get(sq, [])]
+    # 1. Selezione Squadra e Problema
+    sq_sel = st.sidebar.selectbox("Squadra", df_classifica["SQUADRA"].tolist())
+    prob_sel = st.sidebar.selectbox("Problema", df_problemi["ID"].tolist())
+    valore_attuale = int(df_problemi.loc[df_problemi["ID"] == prob_sel, "VALORE"].values[0])
     
-    if disp:
-        pb = st.sidebar.selectbox("Problema", disp)
-        esito = st.sidebar.radio("Esito", ["✅ Corretta", "❌ Sbagliata"])
-        if st.sidebar.button("Registra"):
-            valore = st.session_state.problemi[pb]
-            if esito == "✅ Corretta": 
-                st.session_state.squadre[sq]["PUNTI"] += valore
-                st.session_state.risolti[sq].append(pb)
-                st.session_state.problemi[pb] = max(10, valore - 2)
-            else: 
-                st.session_state.squadre[sq]["PUNTI"] -= 5
+    st.sidebar.write(f"Valore attuale {prob_sel}: **{valore_attuale} pt**")
+
+    # TASTI AZIONE
+    col1, col2 = st.sidebar.columns(2)
+    
+    if col1.button("✅ CORRETTA"):
+        # SALVIAMO IL BACKUP PRIMA DI MODIFICARE (per l'Annulla)
+        st.session_state.backup_c = df_classifica.copy()
+        st.session_state.backup_p = df_problemi.copy()
+        
+        df_classifica.loc[df_classifica["SQUADRA"] == sq_sel, "PUNTI"] += valore_attuale
+        df_problemi.loc[df_problemi["ID"] == prob_sel, "VALORE"] = max(10, valore_attuale - 2)
+        salva_tutto(df_classifica, df_problemi)
+        st.rerun()
+
+    if col2.button("❌ ERRATA"):
+        st.session_state.backup_c = df_classifica.copy()
+        st.session_state.backup_p = df_problemi.copy()
+        
+        df_classifica.loc[df_classifica["SQUADRA"] == sq_sel, "PUNTI"] -= 5
+        salva_tutto(df_classifica, df_problemi)
+        st.rerun()
+
+    st.sidebar.markdown("---")
+    
+    # 2. TASTO ANNULLA (Il cuore della tua richiesta)
+    if "backup_c" in st.session_state:
+        if st.sidebar.button("⏪ ANNULLA ULTIMA AZIONE"):
+            salva_tutto(st.session_state.backup_c, st.session_state.backup_p)
+            del st.session_state.backup_c # Rimuoviamo per non annullare due volte la stessa cosa
+            st.sidebar.warning("Azione annullata!")
+            time.sleep(1)
             st.rerun()
 
-    time.sleep(1)
+    if st.sidebar.button("⚠️ RESET"):
+        if st.sidebar.checkbox("Confermo"):
+            conn.update(worksheet="Classifica", data=pd.DataFrame())
+            conn.update(worksheet="Problemi", data=pd.DataFrame())
+            st.rerun()
+
+    # --- VISUALIZZAZIONE PC ---
+    st.title("🏆 CLASSIFICA LIVE")
+    df_proiettata = df_classifica.sort_values(by="PUNTI", ascending=False)
+    html = (df_proiettata.style
+            .apply(lambda r: [f'background-color: {r["COLORE"]}; color: black;', ''], axis=1, subset=["SQUADRA", "PUNTI"])
+            .hide(axis="index").to_html())
+    st.write(html, unsafe_allow_html=True)
+
+    time.sleep(4)
     st.rerun()
