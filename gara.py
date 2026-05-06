@@ -20,19 +20,19 @@ st.markdown("""
     
     /* REGOLE CELLE: Altezza fissa e rimozione spaziature che sbilanciano */
     div[data-testid="stTable"] th, div[data-testid="stTable"] td {
-        height: 60px !important;
+        height: 80px !important;
         padding: 0 !important; 
         vertical-align: middle !important;
-        text-align: center !important; /* Forza il centro orizzontale nella cella */
+        text-align: center !important;
     }
     
-    /* LA MAGIA FLEXBOX CORRETTA: Centra ovunque i contenitori interni */
+    /* LA MAGIA FLEXBOX CORRETTA */
     div[data-testid="stTable"] th div, div[data-testid="stTable"] td div {
         display: flex !important;
-        align-items: center !important; /* Centro verticale */
-        justify-content: center !important; /* Centro orizzontale */
+        align-items: center !important;
+        justify-content: center !important;
         height: 100% !important;
-        width: 100% !important; /* Obbliga il div a occupare tutta la cella */
+        width: 100% !important;
         margin: 0 auto !important;
         text-align: center !important;
     }
@@ -108,26 +108,12 @@ if not st.session_state.gara_avviata:
 
 # --- INTERFACCIA GARA ---
 else:
-    st.title("🏆 CLASSIFICA")
-    
-    # --- TIMER ---
-    tempo_rimanente = st.session_state.fine_gara - datetime.now()
-    if tempo_rimanente.total_seconds() > 0:
-        mins, secs = divmod(int(tempo_rimanente.total_seconds()), 60)
-        timer_text = f"⏱️ Fine gara tra: {mins:02d}:{secs:02d}"
-        if mins < 5:
-            st.error(timer_text)
-        else:
-            st.info(timer_text)
-    else:
-        st.error("⌛ GARA TERMINATA!")
-
     # Tasto Reset in Sidebar
     if st.sidebar.button("⚠️ Reset Totale"):
         st.session_state.gara_avviata = False
         st.rerun()
 
-    # --- PANNELLO GIUDICE ---
+    # --- PANNELLO GIUDICE (Sempre attivo) ---
     st.sidebar.header("Pannello Giudice")
     squadra_scelta = st.sidebar.selectbox("Squadra", list(st.session_state.squadre.keys()))
     
@@ -151,7 +137,7 @@ else:
     else:
         st.sidebar.success("Tutti i problemi risolti!")
 
-    # --- CREAZIONE TABELLA CON COLORI DINAMICI E CENTRAGGIO FORZATO ---
+    # --- CREAZIONE TABELLA CON COLORI DINAMICI (Calcolata in background) ---
     df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index')
     df = df.sort_values(by="PUNTI", ascending=False)
     
@@ -159,23 +145,52 @@ else:
     df.columns = ["SQUADRA", "PUNTI"]
     
     def colora_squadre(colonna):
-        # Aggiunto text-align: center direttamente nello stile in linea di Pandas
         return [f'background-color: {st.session_state.colori_squadre.get(nome, "#ffffff")}; color: #000000; text-align: center;' for nome in colonna]
 
-    # Applichiamo i colori, forziamo l'allineamento su tutta la tabella e nascondiamo l'indice
     tabella_stilizzata = (df.style
                           .apply(colora_squadre, subset=['SQUADRA'])
                           .set_properties(**{'text-align': 'center'})
                           .hide(axis="index"))
 
-    st.table(tabella_stilizzata)
-
-    # --- CRONOLOGIA ---
-    st.write("---")
-    st.subheader("Ultimi aggiornamenti")
-    for msg in reversed(st.session_state.log[-5:]):
-        st.write(f"• {msg}")
+    # --- LOGICA DI VISUALIZZAZIONE (BUIO DEGLI ULTIMI 2 MINUTI) ---
+    tempo_rimanente = st.session_state.fine_gara - datetime.now()
+    secondi = tempo_rimanente.total_seconds()
     
+    if secondi > 120:
+        # FASE 1: Gara Normale (> 2 minuti)
+        st.title("🏆 CLASSIFICA")
+        mins, secs = divmod(int(secondi), 60)
+        st.info(f"⏱️ Fine gara tra: {mins:02d}:{secs:02d}")
+        
+        st.table(tabella_stilizzata)
+
+        st.write("---")
+        st.subheader("Ultimi aggiornamenti")
+        for msg in reversed(st.session_state.log[-5:]):
+            st.write(f"• {msg}")
+            
+    elif secondi > 0:
+        # FASE 2: Classifica Nascosta (ultimi 2 minuti)
+        mins, secs = divmod(int(secondi), 60)
+        
+        # Uso HTML per creare testi giganti e centrati
+        st.markdown("<br><br>", unsafe_allow_html=True) # Spazio vuoto sopra
+        st.markdown("<h1 style='text-align: center; font-size: 70px; color: #ff4b4b;'>🙈 Classifica nascosta 🙈</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h1 style='text-align: center; font-size: 120px; font-weight: bold;'>⏱️ {mins:02d}:{secs:02d}</h1>", unsafe_allow_html=True)
+        # Nota: il log è di proposito nascosto qui per non rivelare i punti assegnati!
+
+    else:
+        # FASE 3: Gara Terminata (Il tempo è scaduto, si svela tutto)
+        st.title("🏆 CLASSIFICA FINALE")
+        st.error("⌛ GARA TERMINATA!")
+        
+        st.table(tabella_stilizzata)
+        
+        st.write("---")
+        st.subheader("Ultimi aggiornamenti")
+        for msg in reversed(st.session_state.log[-5:]):
+            st.write(f"• {msg}")
+
     # Refresh automatico invisibile per il timer
     time.sleep(1)
     st.rerun()
