@@ -7,13 +7,27 @@ import itertools
 # 1. Configurazione Pagina
 st.set_page_config(page_title="Classifica Gara Matematica", layout="wide")
 
-# 2. CSS "FORZA BRUTA"
+# 2. CSS "FORZA BRUTA" + FIX ANTI-SBIADIMENTO
 st.markdown("""
 <style>
+    /* ELIMINA L'EFFETTO SBIADITO (FANTASMA) DURANTE IL RERUN */
+    [data-testid="stAppViewBlockContainer"] {
+        opacity: 1 !important;
+    }
+    div[data-testid="stAppViewBlockContainer"] > section:first-child {
+        opacity: 1 !important;
+    }
+    .stApp {
+        opacity: 1 !important;
+    }
+
+    /* Ripristino pulsante sidebar */
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; color: transparent !important; }
     [data-testid="stHeader"] button { color: #555 !important; visibility: visible !important; }
     [data-testid="stStatusWidget"] { visibility: hidden !important; }
+    
     .main .block-container { max-width: 900px; padding-top: 1rem; }
+    
     table { margin: auto; width: 100%; border-collapse: collapse; text-align: center; }
     th { font-size: 36px !important; background-color: #f0f2f6 !important; color: #000 !important; height: 80px; }
     td { font-size: 32px !important; font-weight: bold !important; height: 80px; vertical-align: middle !important; text-align: center !important; }
@@ -75,13 +89,11 @@ else:
     # Calcolo tempo
     sec = (st.session_state.fine_gara - datetime.now()).total_seconds()
     
-    # LOGICA VISIVA
     if sec > 120:
         st.title("🏆 CLASSIFICA")
         m, s = divmod(int(sec), 60)
         st.info(f"⏱️ Fine gara tra: {m:02d}:{s:02d}")
         
-        # Genero e mostro la tabella SOLO QUI
         df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index').reset_index()
         df.columns = ["SQUADRA", "PUNTI"]
         df = df.sort_values(by="PUNTI", ascending=False)
@@ -89,7 +101,7 @@ else:
         st.write(tab_html, unsafe_allow_html=True)
             
     elif sec > 0:
-        # FASE BUIO: Nessun comando di generazione tabella qui dentro!
+        # FASE BUIO TOTALE
         m, s = divmod(int(sec), 60)
         st.markdown("<br><br><h1 style='text-align: center; font-size: 70px; color: #ff4b4b;'>🙈 Classifica nascosta 🙈</h1>", unsafe_allow_html=True)
         st.markdown(f"<h1 style='text-align: center; font-size: 160px; font-weight: bold;'>{m:02d}:{s:02d}</h1>", unsafe_allow_html=True)
@@ -97,7 +109,6 @@ else:
     else:
         st.title("🏆 CLASSIFICA FINALE")
         st.error("⌛ GARA TERMINATA!")
-        # Rigenero e mostro la tabella per il gran finale
         df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index').reset_index()
         df.columns = ["SQUADRA", "PUNTI"]
         df = df.sort_values(by="PUNTI", ascending=False)
