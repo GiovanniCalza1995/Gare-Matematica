@@ -20,7 +20,7 @@ st.markdown("""
     
     /* REGOLE CELLE: Altezza fissa e rimozione spaziature che sbilanciano */
     div[data-testid="stTable"] th, div[data-testid="stTable"] td {
-        height: 80px !important;
+        height: 60px !important;
         padding: 0 !important; 
         vertical-align: middle !important;
         text-align: center !important; /* Forza il centro orizzontale nella cella */
