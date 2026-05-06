@@ -33,7 +33,7 @@ if not st.session_state.gara_avviata:
     with c1:
         num_s = st.number_input("1) Numero squadre", min_value=2, value=5)
         nomi = st.text_area("2) Nomi squadre (uno per riga)", value="Squadra A\nSquadra B\nSquadra C\nSquadra D\nSquadra E")
-        num_p = st.number_input("3) Numero problemi", min_value=1, value=10) # REINSERITO!
+        num_p = st.number_input("3) Numero problemi", min_value=1, value=10)
     with c2:
         punti_p = st.number_input("4) Punti di partenza", value=200)
         durata = st.number_input("5) Durata (minuti)", min_value=1, value=90)
@@ -41,9 +41,9 @@ if not st.session_state.gara_avviata:
     if st.button("🚀 AVVIA GARA"):
         lista = [n.strip() for n in nomi.split("\n") if n.strip()]
         if len(lista) == num_s:
+            # Creazione sicura di tutte le variabili necessarie
             st.session_state.squadre = {n: {"PUNTI": punti_p} for n in lista}
-            # Crea la lista dei problemi (es: Prob 1, Prob 2...)
-            st.session_state.problemi = {f"Prob {i}": 20 for i in range(1, num_p + 1)}
+            st.session_state.problemi = {f"Prob {i}": 20 for i in range(1, int(num_p) + 1)}
             st.session_state.risolti = {n: [] for n in lista}
             st.session_state.fine = datetime.now() + timedelta(minutes=durata)
             ciclo = itertools.cycle(PALETTE)
@@ -51,39 +51,43 @@ if not st.session_state.gara_avviata:
             st.session_state.gara_avviata = True
             st.rerun()
         else:
-            st.error(f"Hai inserito {len(lista)} nomi per {num_s} squadre. Correggi!")
+            st.error(f"Errore: hai indicato {num_s} squadre ma inserito {len(lista)} nomi.")
 
 # --- SCHERMATA GARA ---
-else:
+elif st.session_state.gara_avviata and 'problemi' in st.session_state:
+    # Pulsante di Reset
     if st.sidebar.button("⚠️ Reset Totale"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
         st.session_state.gara_avviata = False
         st.rerun()
     
     st.sidebar.header("Pannello Giudice")
     sq = st.sidebar.selectbox("Squadra", list(st.session_state.squadre.keys()))
     
-    # Mostra solo i problemi non ancora risolti da quella squadra
-    disp = [p for p in st.session_state.problemi.keys() if p not in st.session_state.risolti[sq]]
+    # Controllo sicuro sui problemi risolti
+    problemi_totali = st.session_state.problemi
+    risolti_da_sq = st.session_state.risolti.get(sq, [])
+    disp = [p for p in problemi_totali.keys() if p not in risolti_da_sq]
     
     if disp:
         pb = st.sidebar.selectbox("Problema", disp)
         esito = st.sidebar.radio("Esito", ["✅ Corretta", "❌ Sbagliata"])
         if st.sidebar.button("Registra"):
-            punti_valore = st.session_state.problemi[pb]
+            valore_attuale = st.session_state.problemi[pb]
             if esito == "✅ Corretta": 
-                st.session_state.squadre[sq]["PUNTI"] += punti_valore
+                st.session_state.squadre[sq]["PUNTI"] += valore_attuale
                 st.session_state.risolti[sq].append(pb)
-                # Il problema ora vale 2 punti in meno per gli altri
-                st.session_state.problemi[pb] = max(10, punti_valore - 2)
+                # Calo valore problema per gli altri
+                st.session_state.problemi[pb] = max(10, valore_attuale - 2)
             else: 
                 st.session_state.squadre[sq]["PUNTI"] -= 5
             st.rerun()
     else:
-        st.sidebar.success("Questa squadra ha risolto tutto!")
+        st.sidebar.success("Squadra completa!")
 
-    # --- CALCOLI ---
-    adesso = datetime.now()
-    sec_rimanenti = (st.session_state.fine - adesso).total_seconds()
+    # --- CALCOLO TEMPO E TABELLA ---
+    sec_rimanenti = (st.session_state.fine - datetime.now()).total_seconds()
     
     df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index').reset_index()
     df.columns = ["SQUADRA", "PUNTI"]
@@ -94,7 +98,7 @@ else:
                        .hide(axis="index")
                        .to_html())
 
-    # --- VISUALIZZAZIONE ---
+    # --- VISUALIZZAZIONE CON PLACEHOLDER ---
     placeholder = st.empty()
 
     with placeholder.container():
