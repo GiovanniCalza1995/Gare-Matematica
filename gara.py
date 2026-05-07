@@ -12,18 +12,16 @@ st.markdown("""
 <style>
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; color: transparent !important; }
     [data-testid="stHeader"] button { color: #555 !important; visibility: visible !important; }
-    .main .block-container { max-width: 900px; padding-top: 1rem; }
+    .main .block-container { max-width: 1000px; padding-top: 1rem; }
     table { margin: auto; width: 100%; border-collapse: collapse; text-align: center; }
     th { font-size: 36px !important; background-color: #f0f2f6 !important; height: 80px; }
     td { font-size: 32px !important; font-weight: bold !important; height: 80px; vertical-align: middle !important; }
-    .stTitle { text-align: center; font-size: 60px !important; }
-    /* Stile specifico per il timer gigante */
+    .stTitle { text-align: center; font-size: 55px !important; margin-bottom: 0px !important; }
     .timer-font {
-        font-size: 70px !important;
+        font-size: 55px !important;
         font-weight: bold !important;
         color: #FF4B4B;
-        text-align: center;
-        margin-bottom: 20px;
+        text-align: right;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -72,7 +70,6 @@ with schermata_principale.container():
         df.columns = ["SQUADRA", "PUNTI"]
         df = df.sort_values(by="PUNTI", ascending=False)
         
-        # Stile tabella
         html_classifica = (df.style
                         .apply(lambda r: [f'background-color: {st.session_state.colori.get(r["SQUADRA"])};', ''], axis=1)
                         .hide(axis="index")
@@ -80,16 +77,19 @@ with schermata_principale.container():
 
         # --- VISUALIZZAZIONE GARA ---
         if sec_rimanenti > 120:
-            st.title("🏆 CLASSIFICA LIVE")
             m, s = divmod(int(sec_rimanenti), 60)
-            # TIMER GIGANTE AGGIORNATO QUI:
-            st.markdown(f'<p class="timer-font">⏱️ {m:02d}:{s:02d}</p>', unsafe_allow_html=True)
+            # Riga unica per Titolo e Timer
+            col_titolo, col_timer = st.columns([2, 1])
+            with col_titolo:
+                st.markdown('<h1 style="text-align: left; font-size: 55px;">🏆 CLASSIFICA LIVE</h1>', unsafe_allow_html=True)
+            with col_timer:
+                st.markdown(f'<p class="timer-font">⏱️ {m:02d}:{s:02d}</p>', unsafe_allow_html=True)
+            
             st.write(html_classifica, unsafe_allow_html=True)
             
         elif sec_rimanenti > 0:
-            # BUIO TOTALE SULLA CLASSIFICA
             m, s = divmod(int(sec_rimanenti), 60)
-            st.markdown("<br><br><h1 style='text-align: center; font-size: 80px; color: #ff4b4b;'>🙈 CLASSIFICA NASCOSTA 🙈</h1>", unsafe_allow_html=True)
+            st.markdown("<br><br><h1 style='text-align: center; font-size: 80px; color: #ff4b4b;'>CLASSIFICA NASCOSTA 🙈</h1>", unsafe_allow_html=True)
             st.markdown(f"<h1 style='text-align: center; font-size: 180px; font-weight: bold; text-align: center;'>{m:02d}:{s:02d}</h1>", unsafe_allow_html=True)
             st.markdown("<p style='text-align: center; font-size: 35px; font-weight: bold;'>Ma la gara continua... Continuate a provare, perché le vostre risposte potrebbero confermare o ribaltare la classifica!</p>", unsafe_allow_html=True)
         
@@ -121,7 +121,6 @@ if st.session_state.gara_avviata:
         esito = st.sidebar.radio("Esito", ["✅ Corretta", "❌ Sbagliata"])
         
         if st.sidebar.button("Registra"):
-            # Salvataggio Backup
             st.session_state.backup = {
                 "squadre": {k: v.copy() for k, v in st.session_state.squadre.items()},
                 "problemi": st.session_state.problemi.copy(),
