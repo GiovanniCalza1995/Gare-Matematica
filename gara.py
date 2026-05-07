@@ -80,10 +80,10 @@ with schermata_principale.container():
         elif sec_rimanenti > 0:
             # BUIO TOTALE SULLA CLASSIFICA
             m, s = divmod(int(sec_rimanenti), 60)
-            st.markdown("<br><br><h1 style='text-align: center; font-size: 80px; color: #ff4b4b;'>🙈 CLASSIFICA NASCOSTA 🙈</h1>", unsafe_allow_html=True)
+            st.markdown("<br><br><h1 style='text-align: center; font-size: 80px; color: #ff4b4b;'> CLASSIFICA NASCOSTA 🙈</h1>", unsafe_allow_html=True)
             st.markdown(f"<h1 style='text-align: center; font-size: 180px; font-weight: bold; text-align: center;'>{m:02d}:{s:02d}</h1>", unsafe_allow_html=True)
             # ECCO LA TUA MODIFICA:
-            st.markdown("<p style='text-align: center; font-size: 35px; font-weight: bold;'>La gara continua... Continuate a provare, perché le vostre risposte potrebbero confermare o ribaltare la classifica!</p>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; font-size: 35px; font-weight: bold;'>Ma la gara continua... Continuate a provare, perché le vostre risposte potrebbero confermare o ribaltare la classifica!</p>", unsafe_allow_html=True)
         
         else:
             st.title("🏆 CLASSIFICA FINALE")
