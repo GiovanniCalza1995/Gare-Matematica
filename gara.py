@@ -17,6 +17,14 @@ st.markdown("""
     th { font-size: 36px !important; background-color: #f0f2f6 !important; height: 80px; }
     td { font-size: 32px !important; font-weight: bold !important; height: 80px; vertical-align: middle !important; }
     .stTitle { text-align: center; font-size: 60px !important; }
+    /* Stile specifico per il timer gigante */
+    .timer-font {
+        font-size: 70px !important;
+        font-weight: bold !important;
+        color: #FF4B4B;
+        text-align: center;
+        margin-bottom: 20px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -74,7 +82,8 @@ with schermata_principale.container():
         if sec_rimanenti > 120:
             st.title("🏆 CLASSIFICA LIVE")
             m, s = divmod(int(sec_rimanenti), 60)
-            st.info(f"⏱️ Tempo rimanente: {m:02d}:{s:02d}")
+            # TIMER GIGANTE AGGIORNATO QUI:
+            st.markdown(f'<p class="timer-font">⏱️ {m:02d}:{s:02d}</p>', unsafe_allow_html=True)
             st.write(html_classifica, unsafe_allow_html=True)
             
         elif sec_rimanenti > 0:
@@ -82,7 +91,6 @@ with schermata_principale.container():
             m, s = divmod(int(sec_rimanenti), 60)
             st.markdown("<br><br><h1 style='text-align: center; font-size: 80px; color: #ff4b4b;'>🙈 CLASSIFICA NASCOSTA 🙈</h1>", unsafe_allow_html=True)
             st.markdown(f"<h1 style='text-align: center; font-size: 180px; font-weight: bold; text-align: center;'>{m:02d}:{s:02d}</h1>", unsafe_allow_html=True)
-            # CITAZIONE BORGHESE STYLE:
             st.markdown("<p style='text-align: center; font-size: 35px; font-weight: bold;'>Ma la gara continua... Continuate a provare, perché le vostre risposte potrebbero confermare o ribaltare la classifica!</p>", unsafe_allow_html=True)
         
         else:
@@ -113,7 +121,7 @@ if st.session_state.gara_avviata:
         esito = st.sidebar.radio("Esito", ["✅ Corretta", "❌ Sbagliata"])
         
         if st.sidebar.button("Registra"):
-            # Salvataggio Backup per Annulla
+            # Salvataggio Backup
             st.session_state.backup = {
                 "squadre": {k: v.copy() for k, v in st.session_state.squadre.items()},
                 "problemi": st.session_state.problemi.copy(),
