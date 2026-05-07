@@ -80,9 +80,9 @@ with schermata_principale.container():
         elif sec_rimanenti > 0:
             # BUIO TOTALE SULLA CLASSIFICA
             m, s = divmod(int(sec_rimanenti), 60)
-            st.markdown("<br><br><h1 style='text-align: center; font-size: 80px; color: #ff4b4b;'> CLASSIFICA NASCOSTA 🙈</h1>", unsafe_allow_html=True)
+            st.markdown("<br><br><h1 style='text-align: center; font-size: 80px; color: #ff4b4b;'>🙈 CLASSIFICA NASCOSTA 🙈</h1>", unsafe_allow_html=True)
             st.markdown(f"<h1 style='text-align: center; font-size: 180px; font-weight: bold; text-align: center;'>{m:02d}:{s:02d}</h1>", unsafe_allow_html=True)
-            # ECCO LA TUA MODIFICA:
+            # CITAZIONE BORGHESE STYLE:
             st.markdown("<p style='text-align: center; font-size: 35px; font-weight: bold;'>Ma la gara continua... Continuate a provare, perché le vostre risposte potrebbero confermare o ribaltare la classifica!</p>", unsafe_allow_html=True)
         
         else:
@@ -113,7 +113,7 @@ if st.session_state.gara_avviata:
         esito = st.sidebar.radio("Esito", ["✅ Corretta", "❌ Sbagliata"])
         
         if st.sidebar.button("Registra"):
-            # Salvataggio Backup
+            # Salvataggio Backup per Annulla
             st.session_state.backup = {
                 "squadre": {k: v.copy() for k, v in st.session_state.squadre.items()},
                 "problemi": st.session_state.problemi.copy(),
