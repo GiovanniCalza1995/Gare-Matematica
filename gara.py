@@ -26,7 +26,7 @@ if 'gara_avviata' not in st.session_state:
 
 PALETTE = ["#d4edda", "#fff3cd", "#d1ecf1", "#f8d7da", "#e2e3e5", "#cce5ff", "#e8d5cb", "#d1f2eb", "#f3d8e6", "#ffeeba"]
 
-# Creiamo un contenitore principale che pulirà lo schermo ogni volta
+# Contenitore principale
 schermata_principale = st.empty()
 
 # --- LOGICA DI NAVIGAZIONE ---
@@ -51,17 +51,20 @@ with schermata_principale.container():
                 st.session_state.fine = datetime.now() + timedelta(minutes=durata)
                 ciclo = itertools.cycle(PALETTE)
                 st.session_state.colori = {n: next(ciclo) for n in lista}
+                st.session_state.backup = None # Inizializziamo il backup
                 st.session_state.gara_avviata = True
                 st.rerun()
             else:
-                st.error(f"Errore nomi!")
+                st.error(f"Errore: hai inserito {len(lista)} nomi per {num_s} squadre!")
 
-    elif st.session_state.gara_avviata and 'problemi' in st.session_state:
+    elif st.session_state.gara_avviata:
         # --- CALCOLO DATI ---
         sec_rimanenti = (st.session_state.fine - datetime.now()).total_seconds()
         df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index').reset_index()
         df.columns = ["SQUADRA", "PUNTI"]
         df = df.sort_values(by="PUNTI", ascending=False)
+        
+        # Stile tabella
         html_classifica = (df.style
                         .apply(lambda r: [f'background-color: {st.session_state.colori.get(r["SQUADRA"])};', ''], axis=1)
                         .hide(axis="index")
@@ -82,28 +85,54 @@ with schermata_principale.container():
             st.error("⌛ GARA TERMINATA!")
             st.write(html_classifica, unsafe_allow_html=True)
 
-# --- SIDEBAR (Sempre fuori dal container principale) ---
+# --- SIDEBAR (Pannello Giudice) ---
 if st.session_state.gara_avviata:
-    if st.sidebar.button("⚠️ Reset Totale"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.rerun()
+    st.sidebar.header("🕹️ Pannello Giudice")
     
-    st.sidebar.header("Pannello Giudice")
+    # Reset Totale con conferma
+    if st.sidebar.button("⚠️ Reset Totale"):
+        if st.sidebar.checkbox("Confermo il reset"):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
+    
+    st.sidebar.markdown("---")
+    
     sq = st.sidebar.selectbox("Squadra", list(st.session_state.squadre.keys()))
     disp = [p for p in st.session_state.problemi.keys() if p not in st.session_state.risolti.get(sq, [])]
     
     if disp:
         pb = st.sidebar.selectbox("Problema", disp)
+        val_attuale = st.session_state.problemi[pb]
+        st.sidebar.write(f"Valore attuale {pb}: **{val_attuale} pt**")
+        
         esito = st.sidebar.radio("Esito", ["✅ Corretta", "❌ Sbagliata"])
+        
         if st.sidebar.button("Registra"):
-            valore = st.session_state.problemi[pb]
+            # Salvataggio Backup prima della modifica
+            st.session_state.backup = {
+                "squadre": {k: v.copy() for k, v in st.session_state.squadre.items()},
+                "problemi": st.session_state.problemi.copy(),
+                "risolti": {k: list(v) for k, v in st.session_state.risolti.items()}
+            }
+            
             if esito == "✅ Corretta": 
-                st.session_state.squadre[sq]["PUNTI"] += valore
+                st.session_state.squadre[sq]["PUNTI"] += val_attuale
                 st.session_state.risolti[sq].append(pb)
-                st.session_state.problemi[pb] = max(10, valore - 2)
+                st.session_state.problemi[pb] = max(10, val_attuale - 2)
             else: 
                 st.session_state.squadre[sq]["PUNTI"] -= 5
+            st.rerun()
+    
+    st.sidebar.markdown("---")
+    
+    # TASTO ANNULLA ULTIMA AZIONE
+    if st.session_state.get('backup') is not None:
+        if st.sidebar.button("⏪ Annulla Ultima Azione"):
+            st.session_state.squadre = st.session_state.backup["squadre"]
+            st.session_state.problemi = st.session_state.backup["problemi"]
+            st.session_state.risolti = st.session_state.backup["risolti"]
+            st.session_state.backup = None # Consumiamo il backup
             st.rerun()
 
     time.sleep(1)
