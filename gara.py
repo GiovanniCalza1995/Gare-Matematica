@@ -7,9 +7,12 @@ import itertools
 # 1. Configurazione Pagina
 st.set_page_config(page_title="Classifica Gara Matematica", layout="wide")
 
-# 2. CSS per centraggio e pulizia sidebar
+# 2. CSS per centraggio, pulizia sidebar e RIMOZIONE STOP TIMER
 st.markdown("""
 <style>
+    /* Nasconde l'icona di "Running..." e lo "Stop" in alto a destra */
+    [data-testid="stStatusWidget"] { visibility: hidden; }
+    
     [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; color: transparent !important; }
     [data-testid="stHeader"] button { color: #555 !important; visibility: visible !important; }
     .main .block-container { max-width: 1000px; padding-top: 1rem; }
@@ -78,7 +81,6 @@ with schermata_principale.container():
         # --- VISUALIZZAZIONE GARA ---
         if sec_rimanenti > 120:
             m, s = divmod(int(sec_rimanenti), 60)
-            # Riga unica per Titolo e Timer
             col_titolo, col_timer = st.columns([2, 1])
             with col_titolo:
                 st.markdown('<h1 style="text-align: left; font-size: 55px;">🏆 CLASSIFICA LIVE</h1>', unsafe_allow_html=True)
@@ -145,5 +147,7 @@ if st.session_state.gara_avviata:
             st.session_state.backup = None
             st.rerun()
 
+    time.sleep(1)
+    st.rerun()
     time.sleep(1)
     st.rerun()
