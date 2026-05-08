@@ -10,24 +10,16 @@ st.set_page_config(page_title="Classifica Gara Matematica", layout="wide")
 # 2. CSS per pulizia e mantenimento tasto Sidebar
 st.markdown("""
 <style>
-    /* Nasconde solo lo stato "Running/Stop" e le decorazioni, ma lascia il tasto sidebar */
     [data-testid="stStatusWidget"] { visibility: hidden !important; }
-    
-    /* Rende l'header trasparente per non vedere lo Stop, ma lascia i bottoni funzionali */
     header[data-testid="stHeader"] { 
         background-color: rgba(0,0,0,0) !important; 
         color: #555 !important;
     }
-    
-    /* Pulizia contenitore principale */
     .main .block-container { max-width: 1000px; padding-top: 1rem; }
-    
-    /* Tabelle e Font */
     table { margin: auto; width: 100%; border-collapse: collapse; text-align: center; }
     th { font-size: 36px !important; background-color: #f0f2f6 !important; height: 80px; }
     td { font-size: 32px !important; font-weight: bold !important; height: 80px; vertical-align: middle !important; }
     .stTitle { text-align: center; font-size: 55px !important; margin-bottom: 0px !important; }
-    
     .timer-font {
         font-size: 55px !important;
         font-weight: bold !important;
@@ -43,12 +35,14 @@ if 'gara_avviata' not in st.session_state:
 
 PALETTE = ["#d4edda", "#fff3cd", "#d1ecf1", "#f8d7da", "#e2e3e5", "#cce5ff", "#e8d5cb", "#d1f2eb", "#f3d8e6", "#ffeeba"]
 
-# Usiamo un contenitore unico che viene svuotato a ogni rerun
-schermata = st.empty()
+# CREIAMO I DUE CONTENITORI VUOTI
+placeholder_config = st.empty()
+placeholder_gara = st.empty()
 
 # --- LOGICA DI NAVIGAZIONE ---
 if not st.session_state.gara_avviata:
-    with schermata.container():
+    # RIEMPIAMO IL CONTENITORE CONFIGURAZIONE
+    with placeholder_config.container():
         st.title("⚙️ Configurazione Gara")
         c1, c2 = st.columns(2)
         with c1:
@@ -70,14 +64,15 @@ if not st.session_state.gara_avviata:
                 st.session_state.colori = {n: next(ciclo) for n in lista}
                 st.session_state.backup = None
                 st.session_state.gara_avviata = True
+                placeholder_config.empty() # SVUOTIAMO FISICAMENTE LA CONFIGURAZIONE
                 st.rerun()
             else:
                 st.error(f"Errore: hai inserito {len(lista)} nomi per {num_s} squadre!")
 
 else:
-    # SE LA GARA È AVVIATA, DISEGNIAMO DENTRO IL CONTENITORE SVUOTATO
-    with schermata.container():
-        # --- CALCOLO DATI ---
+    # LA GARA È AVVIATA: placeholder_config è già vuoto dal rerun.
+    # RIEMPIAMO IL CONTENITORE GARA
+    with placeholder_gara.container():
         sec_rimanenti = (st.session_state.fine - datetime.now()).total_seconds()
         df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index').reset_index()
         df.columns = ["SQUADRA", "PUNTI"]
@@ -88,7 +83,6 @@ else:
                         .hide(axis="index")
                         .to_html())
 
-        # --- VISUALIZZAZIONE GARA ---
         if sec_rimanenti > 120:
             m, s = divmod(int(sec_rimanenti), 60)
             col_titolo, col_timer = st.columns([2, 1])
@@ -119,7 +113,6 @@ else:
             st.rerun()
     
     st.sidebar.markdown("---")
-    
     sq = st.sidebar.selectbox("Squadra", list(st.session_state.squadre.keys()))
     disp = [p for p in st.session_state.problemi.keys() if p not in st.session_state.risolti.get(sq, [])]
     
@@ -127,7 +120,6 @@ else:
         pb = st.sidebar.selectbox("Problema", disp)
         val_attuale = st.session_state.problemi[pb]
         st.sidebar.write(f"Valore attuale {pb}: **{val_attuale} pt**")
-        
         esito = st.sidebar.radio("Esito", ["✅ Corretta", "❌ Sbagliata"])
         
         if st.sidebar.button("Registra"):
@@ -145,7 +137,6 @@ else:
             st.rerun()
     
     st.sidebar.markdown("---")
-    
     if st.session_state.get('backup') is not None:
         if st.sidebar.button("⏪ Annulla Ultima Azione"):
             st.session_state.squadre = st.session_state.backup["squadre"]
