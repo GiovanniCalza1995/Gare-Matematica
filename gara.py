@@ -7,15 +7,20 @@ import itertools
 # 1. Configurazione Pagina
 st.set_page_config(page_title="Classifica Gara Matematica", layout="wide")
 
-# 2. CSS per pulizia totale
+# 2. CSS per pulizia e mantenimento tasto Sidebar
 st.markdown("""
 <style>
-    /* Nasconde completamente l'header e il widget di stato (Stop/Running) */
-    header[data-testid="stHeader"] { visibility: hidden; height: 0px; }
-    [data-testid="stStatusWidget"] { visibility: hidden; }
+    /* Nasconde solo lo stato "Running/Stop" e le decorazioni, ma lascia il tasto sidebar */
+    [data-testid="stStatusWidget"] { visibility: hidden !important; }
+    
+    /* Rende l'header trasparente per non vedere lo Stop, ma lascia i bottoni funzionali */
+    header[data-testid="stHeader"] { 
+        background-color: rgba(0,0,0,0) !important; 
+        color: #555 !important;
+    }
     
     /* Pulizia contenitore principale */
-    .main .block-container { max-width: 1000px; padding-top: 0rem; }
+    .main .block-container { max-width: 1000px; padding-top: 1rem; }
     
     /* Tabelle e Font */
     table { margin: auto; width: 100%; border-collapse: collapse; text-align: center; }
@@ -38,12 +43,12 @@ if 'gara_avviata' not in st.session_state:
 
 PALETTE = ["#d4edda", "#fff3cd", "#d1ecf1", "#f8d7da", "#e2e3e5", "#cce5ff", "#e8d5cb", "#d1f2eb", "#f3d8e6", "#ffeeba"]
 
-# Contenitore principale
-schermata_principale = st.empty()
+# Usiamo un contenitore unico che viene svuotato a ogni rerun
+schermata = st.empty()
 
 # --- LOGICA DI NAVIGAZIONE ---
-with schermata_principale.container():
-    if not st.session_state.gara_avviata:
+if not st.session_state.gara_avviata:
+    with schermata.container():
         st.title("⚙️ Configurazione Gara")
         c1, c2 = st.columns(2)
         with c1:
@@ -54,7 +59,6 @@ with schermata_principale.container():
             punti_p = st.number_input("4) Punti di partenza", value=200)
             durata = st.number_input("5) Durata (minuti)", min_value=1, value=90)
         
-        # SPOSTATO DENTRO IL BLOCCO CONFIGURAZIONE: sparirà all'avvio
         if st.button("🚀 AVVIA GARA"):
             lista = [n.strip() for n in nomi.split("\n") if n.strip()]
             if len(lista) == num_s:
@@ -70,7 +74,9 @@ with schermata_principale.container():
             else:
                 st.error(f"Errore: hai inserito {len(lista)} nomi per {num_s} squadre!")
 
-    elif st.session_state.gara_avviata:
+else:
+    # SE LA GARA È AVVIATA, DISEGNIAMO DENTRO IL CONTENITORE SVUOTATO
+    with schermata.container():
         # --- CALCOLO DATI ---
         sec_rimanenti = (st.session_state.fine - datetime.now()).total_seconds()
         df = pd.DataFrame.from_dict(st.session_state.squadre, orient='index').reset_index()
@@ -90,7 +96,6 @@ with schermata_principale.container():
                 st.markdown('<h1 style="text-align: left; font-size: 55px;">🏆 CLASSIFICA LIVE</h1>', unsafe_allow_html=True)
             with col_timer:
                 st.markdown(f'<p class="timer-font">⏱️ {m:02d}:{s:02d}</p>', unsafe_allow_html=True)
-            
             st.write(html_classifica, unsafe_allow_html=True)
             
         elif sec_rimanenti > 0:
@@ -104,8 +109,7 @@ with schermata_principale.container():
             st.error("⌛ GARA TERMINATA!")
             st.write(html_classifica, unsafe_allow_html=True)
 
-# --- SIDEBAR (Pannello Giudice) ---
-if st.session_state.gara_avviata:
+    # --- SIDEBAR (Pannello Giudice) ---
     st.sidebar.header("🕹️ Pannello Giudice")
     
     if st.sidebar.button("⚠️ Reset Totale"):
@@ -132,7 +136,6 @@ if st.session_state.gara_avviata:
                 "problemi": st.session_state.problemi.copy(),
                 "risolti": {k: list(v) for k, v in st.session_state.risolti.items()}
             }
-            
             if esito == "✅ Corretta": 
                 st.session_state.squadre[sq]["PUNTI"] += val_attuale
                 st.session_state.risolti[sq].append(pb)
