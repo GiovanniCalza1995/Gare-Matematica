@@ -7,19 +7,22 @@ import itertools
 # 1. Configurazione Pagina
 st.set_page_config(page_title="Classifica Gara Matematica", layout="wide")
 
-# 2. CSS per centraggio, pulizia sidebar e RIMOZIONE STOP TIMER
+# 2. CSS per pulizia totale
 st.markdown("""
 <style>
-    /* Nasconde l'icona di "Running..." e lo "Stop" in alto a destra */
+    /* Nasconde completamente l'header e il widget di stato (Stop/Running) */
+    header[data-testid="stHeader"] { visibility: hidden; height: 0px; }
     [data-testid="stStatusWidget"] { visibility: hidden; }
     
-    [data-testid="stHeader"] { background-color: rgba(0,0,0,0) !important; color: transparent !important; }
-    [data-testid="stHeader"] button { color: #555 !important; visibility: visible !important; }
-    .main .block-container { max-width: 1000px; padding-top: 1rem; }
+    /* Pulizia contenitore principale */
+    .main .block-container { max-width: 1000px; padding-top: 0rem; }
+    
+    /* Tabelle e Font */
     table { margin: auto; width: 100%; border-collapse: collapse; text-align: center; }
     th { font-size: 36px !important; background-color: #f0f2f6 !important; height: 80px; }
     td { font-size: 32px !important; font-weight: bold !important; height: 80px; vertical-align: middle !important; }
     .stTitle { text-align: center; font-size: 55px !important; margin-bottom: 0px !important; }
+    
     .timer-font {
         font-size: 55px !important;
         font-weight: bold !important;
@@ -51,6 +54,7 @@ with schermata_principale.container():
             punti_p = st.number_input("4) Punti di partenza", value=200)
             durata = st.number_input("5) Durata (minuti)", min_value=1, value=90)
         
+        # SPOSTATO DENTRO IL BLOCCO CONFIGURAZIONE: sparirà all'avvio
         if st.button("🚀 AVVIA GARA"):
             lista = [n.strip() for n in nomi.split("\n") if n.strip()]
             if len(lista) == num_s:
@@ -147,7 +151,5 @@ if st.session_state.gara_avviata:
             st.session_state.backup = None
             st.rerun()
 
-    time.sleep(1)
-    st.rerun()
     time.sleep(1)
     st.rerun()
